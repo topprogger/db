@@ -18,28 +18,25 @@ namespace parasha
 
         }
 
-        public static DataTable ReadCsv(string Fname,string DtName) 
+        public static List<List<string>> ReadCsv(string Fname) 
         {
-          DataTable _out = new DataTable();
-            List<string> data = new List<string>();
+         // DataTable _out = new DataTable();
+            List<List<string>> data = new List<List<string>>();
             using (StreamReader stringReader = new StreamReader(Path.Combine(ExePath, Fname)))
             {
                 string line;
 
-                while ((line = stringReader.ReadLine()) != null || data[0]!=DtName)
+                while ((line = stringReader.ReadLine()) != null )
                 {
-                    data=line.Split(";").ToList();                    
+                   data.Add(line.Split(';').ToList()); //line.Split(";").to ;                    
                 }
 
                 
             }
-            data.Remove(DtName);
-            foreach (string s in data) 
-            {
-                _out.Columns.Add(s);
-            }
+           
+           
 
-            return _out;
+            return data;
         }
 
     }

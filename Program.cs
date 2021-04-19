@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.Json;
+using System.Linq;
 using System.Data;
 namespace parasha
 {
@@ -73,11 +73,45 @@ namespace parasha
             Console.ReadKey();
             RetToMainMenu();
         }
+
+        private static void ShowDT(DataTable dataTable) 
+        {
+            Console.WriteLine("this is " + dataTable.TableName);
+
+        }
         public static void TableList()
         {
-            FileHandler.ReadCsv("Tables.csv","11");
-            Console.ReadKey();
-            RetToMainMenu();
+            int i = 0;
+            menu tablesMenu = new menu();
+            List<List<String>> Raw_tabledata = FileHandler.ReadCsv("Tables.csv");
+           // List<DataTable> tables = new List<DataTable>();
+            foreach (List<string> table in Raw_tabledata) 
+            {
+                DataTable dt = new DataTable(table[0]);
+                var x = table.Skip(0).ToList();
+               
+                foreach (string column in x.ToList())
+                {
+                    dt.Columns.Add();
+                }
+                
+                MenuItem menuItem = new MenuItem(table[0], new MenuItem.ActionObject(ActionObject => ShowDT(dt)));
+                tablesMenu.add_menu_item(menuItem);
+                i++;
+            }
+            tablesMenu.Draw();
+
+            ConsoleKeyInfo keyInfo = new ConsoleKeyInfo();
+
+            while (keyInfo.Key != ConsoleKey.Enter)
+            {
+
+                keyInfo = Console.ReadKey(intercept: true);
+                tablesMenu.Switch_menu_item(keyInfo);
+            }
+            tablesMenu.ChooseAction();
+           Console.ReadKey();
+            tablesMenu.Draw();
         }
 
     }
