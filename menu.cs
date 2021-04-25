@@ -16,12 +16,20 @@ namespace parasha
             Items = new List<MenuItem>();
         }
  
-        public void Draw() 
+        public void Draw(string AdditionalMessage = null) 
         {
             var _Items = Items.Count;
             int i = 0;
-            
+
+           
             Console.Clear();
+
+            if (AdditionalMessage != null)
+            {
+                Console.SetCursorPosition(Console.WindowWidth / 2-(AdditionalMessage.Length/2), Items.Count);
+                Console.WriteLine(AdditionalMessage);
+            }
+
             if (_Items>0)
             {
                 foreach (MenuItem itm in Items)
@@ -40,7 +48,16 @@ namespace parasha
             
             Console.SetCursorPosition(Console.WindowWidth / 2 - 2, _CurrentMenuPos);
             Console.Write(">");
-            
+
+            ConsoleKeyInfo keyInfo = new ConsoleKeyInfo();
+
+            while (keyInfo.Key != ConsoleKey.Enter)
+            {
+
+                keyInfo = Console.ReadKey(intercept: true);
+                Switch_menu_item(keyInfo);
+            }
+            ChooseAction();
         }
 
         public void Switch_menu_item(ConsoleKeyInfo keyInfo)
@@ -48,7 +65,6 @@ namespace parasha
            
                 if (keyInfo.Key == ConsoleKey.UpArrow)
                 {
-
                 DelPointer(_CurrentMenuPos);
                 _CurrentMenuPos--;          
                 RedrawPointer(_CurrentMenuPos);               
