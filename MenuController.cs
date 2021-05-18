@@ -20,17 +20,14 @@ namespace parasha
 
         public void ReturnToPrevMenu()
         {
-            //int _currentmenu = menus.IndexOf(currentMenu);
-            //menu _menuToDraw = currentMenu;
+
            menu _out = new menu();
+            
+
+             menus.TryGetValue(current_menu, out _out);
             current_menu--;
-            if (current_menu < 0)
-            {
-                System.Environment.Exit(1);
-            }
-            menus.TryGetValue(current_menu,out _out);           
-            _out.Draw();
-           
-        }
+             if(_out is null) { System.Environment.Exit(1); }
+           _out.Draw();          
+        }    
     }
 }

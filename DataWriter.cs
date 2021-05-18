@@ -1,15 +1,17 @@
 ﻿
+using System;
 using System.IO;
 using System.Data;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace parasha
 {
     static class DataWriter
     {
-        private static string ExePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location),"Data");
+        private static string ExePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location));
      
-        public static void NewTable(DataTable table) 
+        public static void NewTable(DataTable table,string DBname) 
         {
             string fname = ExePath+@"\"+table.TableName + ".csv";
 
@@ -17,21 +19,24 @@ namespace parasha
             {
                 Directory.CreateDirectory(ExePath);
             }
-            using (StreamWriter stream = new StreamWriter(fname,true)) 
+            try
             {
-                string columns = "";
-                foreach(DataColumn column in table.Columns) 
+                using (StreamWriter stream = new StreamWriter(fname, true))
                 {
-                    if(table.PrimaryKey.Equals(column)) 
-                    { 
-                        column.ColumnName = column + "(PK)"; 
+                    string columns = "";
+                    foreach (DataColumn column in table.Columns)
+                    {
+                        if (table.PrimaryKey[0] == column)
+                        {
+                            column.ColumnName = column + "(PK)";
+                        }
+                        columns = columns + column + ";";
                     }
 
-                    columns = columns + column + ";";
+                    stream.WriteLine(columns.Substring(0, columns.Length - 1));
                 }
-                
-                stream.WriteLine(columns.Substring(0,columns.Length-1));
             }
+            catch (IOException e) { LogError(e.Message); }
         }
 
         public static List<DataTable> GetTableList() 
@@ -61,5 +66,56 @@ namespace parasha
             return OutList;
         }
 
+        public static string CreateDB(string DBname) 
+        {
+            string res =  $"База {DBname} успешно создана";
+            string DbPath = ExePath + @$"\DataBases\{DBname}";
+            try 
+            {
+                if (!Directory.Exists(DbPath)) 
+                {
+                    Directory.CreateDirectory(DbPath);
+                }
+            }catch(IOException e) { LogError(e.Message); res = "Ошибка создания базы!"; }
+
+            return res;
+        }
+        
+        public static List<string> GetDBlist(string DB) 
+        {
+            if (Directory.Exists(Path.Combine(ExePath, "DataBases",DB)))
+            {
+                try
+                {
+                    return Directory.GetDirectories(Path.Combine(ExePath, "DataBases",DB)).ToList();
+                }
+                catch (IOException e) { LogError(e.Message); }
+            }
+            return null; 
+        }
+
+        public static void LogError(string Message) 
+        {
+
+            string Fname = "error_" + System.DateTime.Now.ToString("hh_mm_ss") + ".txt";
+            string date = System.DateTime.Now.ToString("dd_MM_yyyy");
+
+            if (!Directory.Exists(Path.Combine(ExePath, "Logs")))
+            {
+                Directory.CreateDirectory(Path.Combine(ExePath, "Logs"));
+            }
+
+            if (!Directory.Exists(Path.Combine(ExePath, "Logs", date)))
+            {
+                Directory.CreateDirectory(Path.Combine(ExePath, "Logs", date));
+            }
+
+            using (StreamWriter stream = new StreamWriter(Path.Combine(ExePath,"Logs",date, Fname))) 
+            {
+                stream.WriteLine(Message);
+            }
+            Console.WriteLine("Something goes wrong((( \n press any key to continue...");
+            Console.ReadKey();
+        }
     }
 }

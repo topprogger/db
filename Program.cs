@@ -1,84 +1,128 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Data;
 namespace parasha
 {
     class Program
     {
-        static MenuController MenuController = new MenuController();        
-        
+        static MenuController MenuController = new MenuController();
+        static string CurrentDB ="";
         static void Main(string[] args)
         {
 
+            GetDBlist();
+
             
             menu MainMenu = new menu();
-            
-            MenuItem tblList = new MenuItem("Список таблиц",new MenuItem.Action (GetTableList));
-            MenuItem CrtTbl = new MenuItem("Создать таблицу", new MenuItem.Action(CreateTable));
-            MenuItem Exit = new MenuItem("Выйти", new MenuItem.ActionObject (ActionObject=> Environment.Exit(0)));
 
-            MainMenu.add_menu_item(tblList);
+            MenuItem tblList = new MenuItem("Список таблиц", new MenuItem.Action(GetTableList));
+            MenuItem CrtTbl = new MenuItem("Создать таблицу", new MenuItem.ActionObject(ActionObject=>CreateTable(CurrentDB)));
+            MenuItem Exit = new MenuItem("Выйти", new MenuItem.ActionObject(ActionObject => Environment.Exit(0)));
+
             MainMenu.add_menu_item(CrtTbl);
+            MainMenu.add_menu_item(tblList);
             MainMenu.add_menu_item(Exit);
 
             MenuController.Add(MainMenu);
             MainMenu.Draw();
 
-           /* ConsoleKeyInfo keyInfo = new ConsoleKeyInfo();
-
-            while (keyInfo.Key != ConsoleKey.Enter)
-            {
-                
-                keyInfo = Console.ReadKey(intercept: true);
-                MainMenu.Switch_menu_item(keyInfo);
-            }
-            MainMenu.ChooseAction(); */           
         }
 
-        public static void CreateTable() 
+        public static void  GetDBlist()
         {
+            menu DbMenu = new menu();
+            bool Dbexist = false;
+            var DbList = DataWriter.GetDBlist(CurrentDB);
+
+            if (DbList != null)
+            {
+                if (DbList.Count>0)
+                {
+                    Dbexist = true;
+                    foreach (string _base in DataWriter.GetDBlist(CurrentDB))
+                    {
+                        DbMenu.add_menu_item(new MenuItem(_base, Action => CurrentDB = _base));
+                    }
+                    MenuController.Add(DbMenu);
+                    DbMenu.Draw();
+                }
+               
+            }
+            if(!Dbexist) 
+            {
+                Console.WriteLine("No databases found \n To create base press any key...");
+                Console.ReadKey();
+                Console.Clear();
+                Console.Write("Enter DB name:");
+             
+                DataWriter.CreateDB(Console.ReadLine());
+            }
+            
+        }
+
+       
+
+        public static void CreateTable(string DbName)
+        {
+            Console.Clear();
             string TableName = "", ColumnName = "";
             List<string> Columns = new List<string>();
             DataTable NewDT = new DataTable();
+            
             menu CreateTable = new menu();
-
             menu SetIdentity = new menu();
 
-            MenuItem Yes = new MenuItem("Да", new MenuItem.ActionObject(ActionObject=>DataWriter.NewTable(NewDT)));
-            MenuItem No = new MenuItem("Нет",new MenuItem.ActionObject(ActionObject => Main(new string[] { })));
-            
+            MenuItem Yes = new MenuItem("Да", new MenuItem.ActionObject(ActionObject => DataWriter.NewTable(NewDT, DbName)));
+            MenuItem No = new MenuItem("Нет", new MenuItem.ActionObject(ActionObject => Main(new string[] { })));
+
             CreateTable.add_menu_item(Yes);
             CreateTable.add_menu_item(No);
 
 
             Console.Write("Введите название таблицы:");
             TableName = Console.ReadLine();
+
             NewDT.TableName = TableName;
             Console.WriteLine("Введите название столбцов( Введите '-' для завершения):");
 
             while (ColumnName != "-")
             {
-               
                 ColumnName = Console.ReadLine();
                 if (Columns.Contains(ColumnName)) { Console.Write("Наименования столбцов должны быть уникальны"); }
                 else { Columns.Add(ColumnName); }
             }
             Columns.Remove("-");
 
-
-           
-            foreach(string colName in Columns) 
+            if (Columns.Count == 0)
             {
-                
+                MenuController.ReturnToPrevMenu();
+            }
+            foreach (string colName in Columns)
+            {
+
                 NewDT.Columns.Add(colName);
-                MenuItem item = new MenuItem(colName, new MenuItem.ActionObject(ActionObject =>NewDT=setIdentity(colName, NewDT)));
+                MenuItem item = new MenuItem(colName, new MenuItem.ActionObject(ActionObject => NewDT = setIdentity(colName, NewDT)));
                 SetIdentity.add_menu_item(item);
             }
+
+
+           if (DataWriter.GetTableList().Exists(x => x.TableName == NewDT.TableName))
+            {
+                menu tblExist = new menu()  ;
+
+                MenuItem Y = new MenuItem("Да", new MenuItem.ActionObject(ActionObject=>Program.CreateTable(CurrentDB)));
+                MenuItem N = new MenuItem("Нет", new MenuItem.Action(MenuController.ReturnToPrevMenu));
+                tblExist.add_menu_item(Y);
+                tblExist.add_menu_item(N);
+
+                tblExist.Draw("Таблица с таким названием уже существует. Повторить ввод?");
+            }
+
             SetIdentity.Draw("Необходимо установить первичный ключ");
             CreateTable.Draw($"Создать таблицу {NewDT.TableName}?");
-           
+            MenuController.ReturnToPrevMenu();
         }
+       
         private static DataTable setIdentity(string ColName,DataTable table) 
         { 
             table.PrimaryKey = new DataColumn[] { table.Columns[ColName]};;
@@ -106,20 +150,16 @@ namespace parasha
         }
 
         private static void ShowDT(DataTable dataTable) 
-        {         
-
-            int colCnt = dataTable.Columns[0].Caption.Length;
-            menu TablePrimaryRow = new menu();
-            DataColumn[] Primary = dataTable.PrimaryKey;
-            if (dataTable.Rows.Count > 0 && Primary!=null) 
+        {
+            int Width = 0;
+            foreach (DataColumn column in dataTable.Columns) 
             {
-                    foreach(DataRow dr in dataTable.Rows) 
-                {
-                     MenuItem item = new MenuItem(dr[0].ToString(), new MenuItem.ActionObject(ActionObject => Environment.Exit(0)));
-                    TablePrimaryRow.add_menu_item(item);
-                }
+                Console.SetCursorPosition(Width,0);
+                Console.Write("|"+column+"|");
+                Width = Width + column.ColumnName.Length+1;
             }
-            TablePrimaryRow.Draw("Выберите столбец на который будет установлен первичный ключ");
+            Console.ReadKey();
+            MenuController.ReturnToPrevMenu();
         }
         public static void GetTableList()
         {
@@ -128,10 +168,8 @@ namespace parasha
 
             List<DataTable> tables = DataWriter.GetTableList();
               
-
             foreach (DataTable table in tables) 
-            {
-                
+            {               
                 MenuItem menuItem = new MenuItem(table.TableName, new MenuItem.ActionObject(ActionObject => ShowDT(table)));
                 tablesMenu.add_menu_item(menuItem);
                 i++;
