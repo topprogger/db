@@ -13,7 +13,7 @@ namespace parasha
      
         public static void NewTable(DataTable table,string DBname) 
         {
-            string fname = ExePath+@"\"+table.TableName + ".csv";
+            string fname = ExePath+@"\Databases\"+DBname+@"\"+table.TableName + ".csv";
 
             if (!Directory.Exists(ExePath)) 
             {
@@ -39,14 +39,14 @@ namespace parasha
             catch (IOException e) { LogError(e.Message); }
         }
 
-        public static List<DataTable> GetTableList() 
+        public static List<DataTable> GetTableList(string DbName) 
         {
             List<DataTable> OutList = new List<DataTable>();
 
 
-            if (Directory.Exists(ExePath)) 
+            if (Directory.Exists(Path.Combine(ExePath,"Databases",DbName))) 
             {
-                string[] files = Directory.GetFiles(ExePath);
+                string[] files = Directory.GetFiles(Path.Combine(ExePath, "Databases",DbName));
                 foreach (string file in files) 
                 {
                     DataTable table = new DataTable(Path.GetFileNameWithoutExtension(file));
@@ -68,6 +68,7 @@ namespace parasha
 
         public static string CreateDB(string DBname) 
         {
+            DBname = DBname.Replace(" ","_");
             string res =  $"База {DBname} успешно создана";
             string DbPath = ExePath + @$"\DataBases\{DBname}";
             try 
@@ -80,14 +81,22 @@ namespace parasha
 
             return res;
         }
-        
-        public static List<string> GetDBlist(string DB) 
+       
+        public static List<string> GetDBlist() 
         {
-            if (Directory.Exists(Path.Combine(ExePath, "DataBases",DB)))
+            
+            if (Directory.Exists(Path.Combine(ExePath, "DataBases")))
             {
                 try
                 {
-                    return Directory.GetDirectories(Path.Combine(ExePath, "DataBases",DB)).ToList();
+                    List<string> directories = Directory.GetDirectories(Path.Combine(ExePath, "DataBases")).ToList();
+                for(int i=0;i<directories.Count();i++) 
+                    {
+                        DirectoryInfo info = new DirectoryInfo(directories[i]);
+                     directories[i] =  info.Name;
+                    }
+                    return directories;
+                
                 }
                 catch (IOException e) { LogError(e.Message); }
             }

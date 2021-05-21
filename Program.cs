@@ -11,20 +11,24 @@ namespace parasha
         {
 
             GetDBlist();
+           
+        }
 
-            
+      public static void BaseMenu(string BD )
+        {
+            CurrentDB = BD;
             menu MainMenu = new menu();
 
-            MenuItem tblList = new MenuItem("Список таблиц", new MenuItem.Action(GetTableList));
-            MenuItem CrtTbl = new MenuItem("Создать таблицу", new MenuItem.ActionObject(ActionObject=>CreateTable(CurrentDB)));
-            MenuItem Exit = new MenuItem("Выйти", new MenuItem.ActionObject(ActionObject => Environment.Exit(0)));
+            MenuItem tblList = new MenuItem("Список таблиц", new MenuItem.ActionObject(ActionObject => GetTableList(CurrentDB)));
+            MenuItem CrtTbl = new MenuItem("Создать таблицу", new MenuItem.ActionObject(ActionObject => CreateTable(CurrentDB)));
+            MenuItem Exit = new MenuItem("Назад", new MenuItem.Action(MenuController.ReturnToPrevMenu));
 
             MainMenu.add_menu_item(CrtTbl);
             MainMenu.add_menu_item(tblList);
             MainMenu.add_menu_item(Exit);
 
             MenuController.Add(MainMenu);
-            MainMenu.Draw();
+            MainMenu.Draw($"Текущая база -> {BD}");
 
         }
 
@@ -32,21 +36,23 @@ namespace parasha
         {
             menu DbMenu = new menu();
             bool Dbexist = false;
-            var DbList = DataWriter.GetDBlist(CurrentDB);
+            var DbList = DataWriter.GetDBlist();
 
             if (DbList != null)
             {
                 if (DbList.Count>0)
                 {
                     Dbexist = true;
-                    foreach (string _base in DataWriter.GetDBlist(CurrentDB))
+                    foreach (string _base in DataWriter.GetDBlist())
                     {
-                        DbMenu.add_menu_item(new MenuItem(_base, Action => CurrentDB = _base));
+                        DbMenu.add_menu_item(new MenuItem(_base,new MenuItem.ActionObject(ActionObject => BaseMenu(_base))));
                     }
+                    DbMenu.add_menu_item(new MenuItem("Создать новую базу", new MenuItem.ActionObject(ActionObject => BaseMenu(CurrentDB=DataWriter.CreateDB(Console.ReadLine())) )));
+                    DbMenu.add_menu_item(new MenuItem("Выход", new MenuItem.Action(MenuController.ReturnToPrevMenu)));
                     MenuController.Add(DbMenu);
                     DbMenu.Draw();
                 }
-               
+            
             }
             if(!Dbexist) 
             {
@@ -55,7 +61,8 @@ namespace parasha
                 Console.Clear();
                 Console.Write("Enter DB name:");
              
-                DataWriter.CreateDB(Console.ReadLine());
+                DataWriter.CreateDB(CurrentDB = Console.ReadLine()) ;
+                BaseMenu(CurrentDB);
             }
             
         }
@@ -73,24 +80,34 @@ namespace parasha
             menu SetIdentity = new menu();
 
             MenuItem Yes = new MenuItem("Да", new MenuItem.ActionObject(ActionObject => DataWriter.NewTable(NewDT, DbName)));
-            MenuItem No = new MenuItem("Нет", new MenuItem.ActionObject(ActionObject => Main(new string[] { })));
+            MenuItem No = new MenuItem("Нет", new MenuItem.ActionObject(ActionObject => BaseMenu(CurrentDB)));
 
             CreateTable.add_menu_item(Yes);
             CreateTable.add_menu_item(No);
 
 
             Console.Write("Введите название таблицы:");
-            TableName = Console.ReadLine();
+            while (TableName is null || TableName.Length<1)
+            { TableName = Console.ReadLine();
+                TableName= TableName.Replace(" ","_");
+            }
 
             NewDT.TableName = TableName;
             Console.WriteLine("Введите название столбцов( Введите '-' для завершения):");
 
-            while (ColumnName != "-")
-            {
-                ColumnName = Console.ReadLine();
-                if (Columns.Contains(ColumnName)) { Console.Write("Наименования столбцов должны быть уникальны"); }
-                else { Columns.Add(ColumnName); }
-            }
+           
+                while (ColumnName is null || ColumnName.Length < 1 || ColumnName!="-")
+                { ColumnName = Console.ReadLine();
+                
+
+                if (!string.IsNullOrWhiteSpace (ColumnName)&& !string.IsNullOrEmpty(ColumnName) &&  !Columns.Contains(ColumnName)) 
+             
+                {
+                    ColumnName = ColumnName.Replace(" ", "_");
+                    Columns.Add(ColumnName);
+                }
+ 
+            }     
             Columns.Remove("-");
 
             if (Columns.Count == 0)
@@ -106,7 +123,7 @@ namespace parasha
             }
 
 
-           if (DataWriter.GetTableList().Exists(x => x.TableName == NewDT.TableName))
+           if (DataWriter.GetTableList(CurrentDB).Exists(x => x.TableName == NewDT.TableName))
             {
                 menu tblExist = new menu()  ;
 
@@ -161,13 +178,22 @@ namespace parasha
             Console.ReadKey();
             MenuController.ReturnToPrevMenu();
         }
-        public static void GetTableList()
+        public static void GetTableList(string dbName)
         {
             int i = 0;
             menu tablesMenu = new menu();
 
-            List<DataTable> tables = DataWriter.GetTableList();
-              
+            List<DataTable> tables = DataWriter.GetTableList(CurrentDB);
+            if(tables.Count<1 || tables is null) 
+            {
+                Console.WriteLine($"No tables in {CurrentDB} \n Create new one?(y/n)");
+                string ans = Console.ReadLine();
+                if (ans=="y") 
+                {
+                    CreateTable(CurrentDB);
+                }
+            else { GetDBlist(); };
+            }
             foreach (DataTable table in tables) 
             {               
                 MenuItem menuItem = new MenuItem(table.TableName, new MenuItem.ActionObject(ActionObject => ShowDT(table)));

@@ -22,10 +22,10 @@ namespace parasha
         {
 
            menu _out = new menu();
-            
 
-             menus.TryGetValue(current_menu, out _out);
             current_menu--;
+            menus.TryGetValue(current_menu, out _out);
+            
              if(_out is null) { System.Environment.Exit(1); }
            _out.Draw();          
         }    

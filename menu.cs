@@ -10,7 +10,7 @@ namespace parasha
 
         private List<MenuItem> Items;
         private int _CurrentMenuPos = 0;
-         
+        public MenuItem currentItemName;
         public menu() 
         {
             Items = new List<MenuItem>();
@@ -113,6 +113,7 @@ namespace parasha
         {
 
             var menuItem = Items[_CurrentMenuPos];
+            currentItemName = menuItem;
             Console.Clear();
             menuItem.ExeMenuAction();
         }
