@@ -31,12 +31,6 @@ namespace parasha
             return $"[{ItemName}]";
         }
 
-        public void setMenuAction(Action action) 
-        {
-            //menuAction = action;
-
-        }
-
         public void ExeMenuAction(object o = null) 
         {
             if (_actionObject != null) 

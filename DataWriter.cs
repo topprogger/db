@@ -4,39 +4,88 @@ using System.IO;
 using System.Data;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.AccessControl;
 
 namespace parasha
 {
     static class DataWriter
     {
         private static string ExePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location));
-     
-        public static void NewTable(DataTable table,string DBname) 
+        private static  bool IsFileLocked(FileInfo file)
         {
-            string fname = ExePath+@"\Databases\"+DBname+@"\"+table.TableName + ".csv";
-
-            if (!Directory.Exists(ExePath)) 
-            {
-                Directory.CreateDirectory(ExePath);
-            }
             try
             {
-                using (StreamWriter stream = new StreamWriter(fname, true))
+                using (FileStream stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.None))
                 {
-                    string columns = "";
-                    foreach (DataColumn column in table.Columns)
-                    {
-                        if (table.PrimaryKey[0] == column)
-                        {
-                            column.ColumnName = column + "(PK)";
-                        }
-                        columns = columns + column + ";";
-                    }
-
-                    stream.WriteLine(columns.Substring(0, columns.Length - 1));
+                    stream.Close();
                 }
             }
-            catch (IOException e) { LogError(e.Message); }
+            catch (IOException)
+            {
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public static void TBLInsertNewValue(string TblName, string DBname,List<DataRow> NewRows) 
+        {
+            string fname = ExePath + @"\Databases\" + DBname + @"\" + TblName + ".csv";
+
+            FileInfo fileInfo = new FileInfo(fname);
+
+            if (!IsFileLocked(fileInfo)) {
+                using (StreamWriter stream = new StreamWriter(fname, true)) 
+                {
+                   foreach(DataRow row in NewRows) 
+                    {
+                        string newCSV = "";
+                        newCSV = String.Join(";", row.ItemArray.Select(x => x.ToString()).ToArray());
+                        stream.WriteLine(newCSV);
+                    }
+                   
+                }
+            }
+        }
+
+        //public static void NewTable(DataTable table,string DBname) 
+        //{
+        //    string fname = ExePath+@"\Databases\"+DBname+@"\"+table.TableName + ".csv";
+
+        //    if (!Directory.Exists(ExePath)) 
+        //    {
+        //        Directory.CreateDirectory(ExePath);
+        //    }
+        //    try
+        //    {
+        //        using (StreamWriter stream = new StreamWriter(fname, true))
+        //        {
+        //            string columns = "";
+        //            foreach (DataColumn column in table.Columns)
+        //            {
+        //                if (table.PrimaryKey[0] == column)
+        //                {
+        //                    column.ColumnName = column + "(PK)";
+        //                }
+        //                columns = columns + column + ";";
+        //            }
+
+        //            stream.WriteLine(columns.Substring(0, columns.Length - 1));
+        //        }
+        //    }
+        //    catch (IOException e) { LogError(e.Message); }
+        //}
+        private static void CheckFileSize(string fName) 
+        {
+            long length = new System.IO.FileInfo(fName).Length;
+        }
+
+        public static void NewTable(DataTable table, string DBname) 
+        {
+
+            string listInfo = ExePath + @"\Databases\" + DBname + @"\" + table.TableName+ @"\lInfo";
+
         }
 
         public static List<DataTable> GetTableList(string DbName) 

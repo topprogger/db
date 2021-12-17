@@ -7,6 +7,7 @@ namespace parasha
     {
         static MenuController MenuController = new MenuController();
         static string CurrentDB ="";
+        static DataTable CurrendDT = null;
         static void Main(string[] args)
         {
 
@@ -67,7 +68,10 @@ namespace parasha
             
         }
 
-       
+       private static void InsertIntoTable() 
+        {
+        
+        }
 
         public static void CreateTable(string DbName)
         {
@@ -178,6 +182,46 @@ namespace parasha
             Console.ReadKey();
             MenuController.ReturnToPrevMenu();
         }
+
+        private static void TableActionInsert(DataTable TblName) 
+        {
+            bool _continue = true;
+            List<DataRow> newRows = new List<DataRow>();
+            Console.WriteLine("Введите значения:");
+            while (_continue) 
+            {
+                DataRow row = TblName.NewRow();
+            foreach (DataColumn column in TblName.Columns) 
+                {
+                    
+                    Console.Write(column.ColumnName + ":");
+                    row[column] = Console.ReadLine();
+
+                }
+                newRows.Add(row);
+                Console.Write("Ввести еще значения?(y|n):");
+              ConsoleKeyInfo answer = Console.ReadKey();
+                if(answer.KeyChar=='n') 
+                { 
+                    _continue = false;
+                    DataWriter.TBLInsertNewValue(TblName.TableName,CurrentDB,newRows);
+                    MenuController.ReturnToPrevMenu();
+                }
+
+                Console.WriteLine();
+            }
+        }
+        private static void TableMenuAction(DataTable TblName) 
+        {
+            menu TbaleActionMenu = new menu();
+
+           MenuItem Insert = new MenuItem($"Вставить запись в {TblName.TableName}", new MenuItem.ActionObject(ActionObject => TableActionInsert(TblName)));
+            MenuItem back = new MenuItem("Back", new MenuItem.Action(MenuController.ReturnToPrevMenu));
+            TbaleActionMenu.add_menu_item(Insert);
+            TbaleActionMenu.add_menu_item(back);
+            MenuController.Add(TbaleActionMenu);
+            TbaleActionMenu.Draw();
+        }
         public static void GetTableList(string dbName)
         {
             int i = 0;
@@ -196,7 +240,7 @@ namespace parasha
             }
             foreach (DataTable table in tables) 
             {               
-                MenuItem menuItem = new MenuItem(table.TableName, new MenuItem.ActionObject(ActionObject => ShowDT(table)));
+                MenuItem menuItem = new MenuItem(table.TableName, new MenuItem.ActionObject(ActionObject => TableMenuAction(table)));
                 tablesMenu.add_menu_item(menuItem);
                 i++;
             }
